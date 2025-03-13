@@ -27,7 +27,8 @@ def get_dataset():
 def knn(vector, k):
     data = get_dataset()
     train_labels = data["train_labels"]
-    flattened_images = data["flattened_images"]
+    flattened_images = tf.cast(data["flattened_images"], tf.float32)
+    # flattened_images = data["flattened_images"]
 
     diffs = flattened_images - vector
     sq_diffs = tf.square(diffs)
@@ -37,10 +38,21 @@ def knn(vector, k):
 
     nearest_labels = [int(train_labels[i]) for i in sorted_dist.numpy()[:k]]
     result = np.bincount(nearest_labels).argmax()
-    return result, nearest_labels
+    return int(result), nearest_labels
 
 
 def lambda_handler(event, context):
+
+    # if event.get("httpMethod") == "OPTIONS":
+    #     return {
+    #         "statusCode": 200,
+    #         "headers": {
+    #             "Access-Control-Allow-Origin": "*",
+    #             "Access-Control-Allow-Headers": "Content-Type",
+    #             "Access-Control-Allow-Methods": "OPTIONS,POST",
+    #         },
+    #     }
+
     try:
         body = json.loads(event["body"])
         vector = tf.constant(body["vector"], dtype=tf.float32)
@@ -51,4 +63,5 @@ def lambda_handler(event, context):
             "body": json.dumps({"result": result, "nearestNeighbors": nearest_labels}),
         }
     except Exception as e:
+        print(e)
         return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
